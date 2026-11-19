@@ -1,0 +1,24 @@
+# StorageClass examples. The dynamic class "nfs-client" is created by lab-setup/scripts/install-nfs-provisioner.sh;
+# this file shows the objects you may be asked to write by hand.
+#   kubectl get storageclass
+#   kubectl patch storageclass local-wait -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-wait
+provisioner: kubernetes.io/no-provisioner      # static PVs only; no dynamic creation
+volumeBindingMode: WaitForFirstConsumer        # bind when a pod is scheduled, so the PV is on the right node
+reclaimPolicy: Retain
+---
+# A claim that uses the dynamic NFS class (needs the provisioner installed)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nfs-claim
+spec:
+  storageClassName: nfs-client
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi

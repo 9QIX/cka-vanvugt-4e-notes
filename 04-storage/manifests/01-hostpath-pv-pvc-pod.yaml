@@ -1,0 +1,52 @@
+# Static provisioning: PV (hostPath /storage) -> PVC -> Pod.
+# hostPath data lives on ONE node, so the pod is pinned to it with nodeSelector.
+# Prepare the data first, on node w1:
+#   sudo mkdir -p /storage && echo 'hello lab 11' | sudo tee /storage/index.html
+# Then:
+#   kubectl apply -f 01-hostpath-pv-pvc-pod.yaml
+#   kubectl get pv,pvc                         # both Bound
+#   kubectl exec pv-pod -- cat /usr/share/nginx/html/index.html
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: lab-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /storage
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lab-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pv-pod
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: w1
+  containers:
+  - name: nginx
+    image: nginx:1.26
+    volumeMounts:
+    - name: web
+      mountPath: /usr/share/nginx/html
+  volumes:
+  - name: web
+    persistentVolumeClaim:
+      claimName: lab-pvc
