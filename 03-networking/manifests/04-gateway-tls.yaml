@@ -1,0 +1,41 @@
+# Gateway API with TLS termination. Create the certificate Secret first (see ../labs/02-gateway-api.md):
+#   openssl req -x509 -nodes -newkey rsa:2048 -days 30 -keyout /tmp/tls.key -out /tmp/tls.crt \
+#     -subj "/CN=my.fruit" -addext "subjectAltName=DNS:my.fruit"
+#   kubectl create secret tls fruit-tls --cert=/tmp/tls.crt --key=/tmp/tls.key
+#
+# Test:
+#   kubectl port-forward svc/fruit-gw-tls-nginx 8443:443 &
+#   curl -k --resolve my.fruit:8443:127.0.0.1 https://my.fruit:8443/
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: fruit-gw-tls
+spec:
+  gatewayClassName: nginx
+  listeners:
+  - name: https
+    port: 443
+    protocol: HTTPS
+    hostname: my.fruit
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: fruit-tls
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: apples-tls
+spec:
+  parentRefs:
+  - name: fruit-gw-tls
+  hostnames:
+  - my.fruit
+  rules:
+  - backendRefs:
+    - name: apples
+      port: 80

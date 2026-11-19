@@ -1,0 +1,80 @@
+# Reusable NetworkPolicy patterns. Apply into a scratch namespace:  kubectl create ns netpol-demo
+# Remember: policies are additive allow-lists. A pod selected by NO policy is open;
+# a pod selected by ANY policy denies everything that policy type does not allow.
+
+# 1) Default deny all ingress in the namespace
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: netpol-demo
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+---
+# 2) Default deny all egress, but still allow DNS to CoreDNS (or nothing resolves)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress-allow-dns
+  namespace: netpol-demo
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+# 3) Allow ingress to app=db only from app=api pods in the SAME namespace, on 5432
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-from-api
+  namespace: netpol-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: db
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: api
+    ports:
+    - protocol: TCP
+      port: 5432
+---
+# 4) OR vs AND: two separate "from" items = OR (any pod labelled team=a in this ns, OR any pod in namespace "monitoring")
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: or-example
+  namespace: netpol-demo
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          team: a
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: monitoring

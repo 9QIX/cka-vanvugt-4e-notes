@@ -1,0 +1,24 @@
+# Expose "apples" on the host name my.fruit through the Traefik Ingress controller.
+# (lab-setup/scripts/install-ingress-controller.sh). On the exam, use whatever ingressClass exists:
+#   kubectl get ingressclass
+#
+# Test:  curl -H 'Host: my.fruit' http://<any-node-ip>:30080/
+# Generate this imperatively:
+#   kubectl create ingress apples --class=traefik --rule="my.fruit/*=apples:80" --dry-run=client -o yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: apples
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: my.fruit
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: apples
+            port:
+              number: 80
