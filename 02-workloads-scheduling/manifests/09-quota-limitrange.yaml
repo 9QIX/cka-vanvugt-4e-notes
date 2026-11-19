@@ -1,0 +1,37 @@
+# Namespace quota + LimitRange defaults (see ../labs/06-resources.md).
+# With a compute quota in place, every pod MUST declare requests/limits, or the LimitRange must supply them.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: quota-lab
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-quota
+  namespace: quota-lab
+spec:
+  hard:
+    pods: "5"
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: container-defaults
+  namespace: quota-lab
+spec:
+  limits:
+  - type: Container
+    default:
+      cpu: 200m
+      memory: 128Mi
+    defaultRequest:
+      cpu: 100m
+      memory: 64Mi
+    max:
+      cpu: 500m
+      memory: 256Mi

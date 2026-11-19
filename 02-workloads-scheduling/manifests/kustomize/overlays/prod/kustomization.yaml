@@ -1,0 +1,19 @@
+# Overlay: same base, production tweaks. Create the namespace first:
+#   kubectl create namespace kustomize-prod
+#   kubectl kustomize overlays/prod          # render only
+#   kubectl apply -k overlays/prod           # apply
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- ../../base
+namespace: kustomize-prod
+namePrefix: prod-
+labels:
+- pairs:
+    env: prod
+replicas:
+- name: web
+  count: 3
+images:
+- name: nginx
+  newTag: "1.27"

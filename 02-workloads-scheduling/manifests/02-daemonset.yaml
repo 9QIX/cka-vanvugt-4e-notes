@@ -1,0 +1,19 @@
+# One nginx pod on every worker node. The control plane is tainted, so it is skipped
+# (a DaemonSet only lands on tainted nodes if it tolerates the taint).
+#   kubectl apply -f 02-daemonset.yaml && kubectl get pods -l app=nginx-daemon -o wide
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nginx-daemon
+spec:
+  selector:
+    matchLabels:
+      app: nginx-daemon
+  template:
+    metadata:
+      labels:
+        app: nginx-daemon
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.26

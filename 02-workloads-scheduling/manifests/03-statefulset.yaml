@@ -1,0 +1,37 @@
+# StatefulSet with a headless Service: stable names web-sts-0, web-sts-1 and stable DNS.
+# No volumeClaimTemplates here on purpose (a kubeadm cluster has no default StorageClass).
+# Add persistent storage after the storage unit (04-storage).
+#   kubectl apply -f 03-statefulset.yaml
+#   kubectl get pods -l app=sts-web         # web-sts-0 then web-sts-1, created in order
+#   kubectl exec web-sts-0 -- hostname
+apiVersion: v1
+kind: Service
+metadata:
+  name: sts-headless
+spec:
+  clusterIP: None
+  selector:
+    app: sts-web
+  ports:
+  - port: 80
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web-sts
+spec:
+  serviceName: sts-headless
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sts-web
+  template:
+    metadata:
+      labels:
+        app: sts-web
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.26
+        ports:
+        - containerPort: 80

@@ -1,0 +1,29 @@
+# Pair of pods for the taint lab (see ../labs/05-scheduling.md).
+#   kubectl taint nodes w2 storage=hdd:NoSchedule
+# "plain" has no toleration and can never land on w2.
+# "tolerant" tolerates the taint; the nodeSelector pins it to w2 so you can SEE it work.
+#   (A toleration only PERMITS scheduling on a tainted node, it does not attract the pod.)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: plain
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.26
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tolerant
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: w2
+  tolerations:
+  - key: storage
+    operator: Equal
+    value: hdd
+    effect: NoSchedule
+  containers:
+  - name: nginx
+    image: nginx:1.26
