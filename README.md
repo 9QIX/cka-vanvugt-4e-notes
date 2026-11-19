@@ -33,7 +33,9 @@ kubectl get nodes               # cp1, w1, w2 -> Ready
 vagrant snapshot save clean     # (from the host) your undo button: break things freely
 ```
 
-Then pick a unit below and open its `README.md`. Full instructions, including the **bring-your-own-VMs** path, are in [`lab-setup/`](lab-setup/README.md).
+Then pick a unit below and open its `README.md`. Full instructions are in [`lab-setup/`](lab-setup/README.md), including the **bring-your-own-VMs** path and a **[VMware Workstation (Windows) path](lab-setup/vmware-workstation/README.md)** that needs no Vagrant.
+
+> Labs show example node IPs (`192.168.56.x`). Use your own wherever a command shows one.
 
 > **Replicable by design:** every lab is a copy-paste command sequence with a *verify* step and a *done-when* checklist. Versions resolve at install time; record yours in [`lab-setup/VERSIONS.md`](lab-setup/VERSIONS.md).
 
@@ -134,6 +136,7 @@ The practice exams are **original** and are not real exam questions.
 ```text
 .
 ├── lab-setup/                 Vagrantfile + scripts: kubeadm cluster, add-ons (metrics, ingress, gateway, NFS, etcd tools)
+│   └── vmware-workstation/    VMware (Windows) path: cloud-image VMs, static IPs, SSH key, no Kubernetes yet
 ├── 01-cluster-setup/          notes · labs/ · manifests/
 ├── 02-workloads-scheduling/   notes · labs/ · manifests/ (incl. kustomize/)
 ├── 03-networking/             notes · labs/ · manifests/

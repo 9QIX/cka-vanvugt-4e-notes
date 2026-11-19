@@ -50,6 +50,14 @@ sudo bash scripts/20-worker.sh            # needs ./join.sh, or paste the join c
 
 Add each node's name and IP to `/etc/hosts` on every node (nice to have, so `ssh w1` works).
 
+## Option C: VMware Workstation on Windows
+
+No Vagrant needed: [`vmware-workstation/`](vmware-workstation/README.md) builds the three VMs from Ubuntu's official cloud image with a small Python helper and a PowerShell script. It stops at a clean OS (no Kubernetes), so building the cluster remains lab 01.
+
+## 📝 About the example IP addresses
+
+The labs show the Vagrant defaults (`192.168.56.11`, `.21`, `.22`) as examples. **Substitute your own node IPs** wherever a command shows one: for example `192.168.178.x` on a VMware NAT network. Names (`cp1`, `w1`, `w2`) are the same on every path.
+
 ## Add-ons used by later labs
 
 | Script | Run on | Needed for |
