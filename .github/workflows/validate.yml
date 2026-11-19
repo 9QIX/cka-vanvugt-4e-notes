@@ -1,0 +1,66 @@
+name: validate
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  shell:
+    name: Shell scripts (shellcheck)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 shellcheck -S warning
+      - name: bash -n
+        run: find . -name '*.sh' -not -path './.git/*' -print0 | xargs -0 -n1 bash -n
+
+  yaml:
+    name: Kubernetes manifests (kubeconform)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeconform
+        run: |
+          curl -fsSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
+            | sudo tar -xz -C /usr/local/bin kubeconform
+      - name: Validate plain manifests
+        run: |
+          # Gateway API kinds have no built-in schema, so unknown kinds are skipped, not failed.
+          find 0*-*/manifests -name '*.yaml' -not -name 'kustomization.yaml' -not -name 'kubeadm-config.yaml' -print0 \
+            | xargs -0 kubeconform -strict -ignore-missing-schemas -summary
+      - name: Render Kustomize overlay
+        run: kubectl kustomize 02-workloads-scheduling/manifests/kustomize/overlays/prod | kubeconform -strict -ignore-missing-schemas -summary
+      - name: YAML well-formed (all files)
+        run: |
+          pip install --quiet pyyaml
+          python - <<'PY'
+          import glob, sys, yaml
+          bad = 0
+          for f in glob.glob('**/*.yaml', recursive=True) + glob.glob('**/*.yml', recursive=True):
+              try:
+                  list(yaml.safe_load_all(open(f, encoding='utf-8')))
+              except Exception as e:
+                  bad += 1
+                  print(f'{f}: {e}')
+          sys.exit(1 if bad else 0)
+          PY
+
+  privacy:
+    name: No secrets or course media
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Block private keys, tokens and course media
+        run: |
+          if grep -rIlE -- '-----BEGIN [A-Z ]*PRIVATE KEY-----|kubeadm join [0-9.]+:6443 --token' --exclude-dir=.git --exclude=validate.yml .; then
+            echo "Found something that looks like a secret"; exit 1
+          fi
+          if git ls-files | grep -iE '\.(mp4|mkv|srt|vtt|m3u)$'; then
+            echo "Course media must not be committed"; exit 1
+          fi
