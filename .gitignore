@@ -1,0 +1,33 @@
+# Vagrant
+.vagrant/
+lab-setup/join.sh
+
+# Secrets and cluster credentials: never commit these
+*.kubeconfig
+admin.conf
+kubeconfig
+.kube/
+*.key
+*.pem
+*.crt
+*.csr
+tls.crt
+tls.key
+
+# etcd snapshots and exported data
+*.db
+*.snap
+
+# Course material belongs to its owners; keep it out of this repo
+*.mp4
+*.mkv
+*.srt
+*.vtt
+*.m3u
+*.zip
+
+# Local noise
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
