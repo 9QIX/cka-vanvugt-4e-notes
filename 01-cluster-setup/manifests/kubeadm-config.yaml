@@ -1,0 +1,16 @@
+# Minimal kubeadm config (API version v1beta4; v1beta3 is rejected by current kubeadm).
+# Usage:  sudo kubeadm init --config kubeadm-config.yaml
+# Replace the example advertise address with your control plane's IP.
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: 192.168.56.11
+  bindPort: 6443
+nodeRegistration:
+  criSocket: unix:///run/containerd/containerd.sock
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+networking:
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: 10.96.0.0/12
