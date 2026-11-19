@@ -1,0 +1,60 @@
+# -*- mode: ruby -*-
+# Three-node kubeadm lab: 1 control plane (cp1) + 2 workers (w1, w2).
+#
+#   vagrant up                      # builds everything (~10-15 min first time)
+#   K8S_MINOR=v1.36 vagrant up      # build one minor BEHIND, so you can practise the upgrade
+#   vagrant ssh cp1
+#
+# Providers: VirtualBox (default) or vmware_desktop (needs the Vagrant VMware plugin).
+# Host-only network 192.168.56.0/24 is the VirtualBox default range. Change IPs below if it clashes.
+
+K8S_MINOR = ENV.fetch("K8S_MINOR", "v1.37")
+BOX       = ENV.fetch("CKA_BOX", "bento/ubuntu-24.04")
+
+NODES = {
+  "cp1" => { ip: "192.168.56.11", cpus: 2, mem: 3072, role: "control-plane" },
+  "w1"  => { ip: "192.168.56.21", cpus: 2, mem: 2048, role: "worker" },
+  "w2"  => { ip: "192.168.56.22", cpus: 2, mem: 2048, role: "worker" },
+}
+
+# One idempotent /etc/hosts line per node, so nodes resolve each other by name.
+HOSTS_CMD = NODES.map { |name, n|
+  "grep -qE '[[:space:]]#{name}$' /etc/hosts || echo '#{n[:ip]} #{name}' >> /etc/hosts"
+}.join("\n")
+
+Vagrant.configure("2") do |config|
+  config.vm.box = BOX
+
+  # The whole repo is available on every node at /cka-repo (needed to run
+  # 05-troubleshooting/scripts/break.sh on a worker). /vagrant is just this folder.
+  config.vm.synced_folder "..", "/cka-repo"
+
+  NODES.each do |name, n|
+    config.vm.define name do |node|
+      node.vm.hostname = name
+      node.vm.network "private_network", ip: n[:ip]
+
+      node.vm.provider "virtualbox" do |vb|
+        vb.name   = "cka-#{name}"
+        vb.cpus   = n[:cpus]
+        vb.memory = n[:mem]
+      end
+      node.vm.provider "vmware_desktop" do |v|
+        v.vmx["numvcpus"] = n[:cpus].to_s
+        v.vmx["memsize"]  = n[:mem].to_s
+      end
+
+      node.vm.provision "hosts", type: "shell", inline: HOSTS_CMD
+
+      node.vm.provision "common", type: "shell", path: "scripts/00-common.sh",
+        env: { "NODE_IP" => n[:ip], "K8S_MINOR" => K8S_MINOR }
+
+      if n[:role] == "control-plane"
+        node.vm.provision "control-plane", type: "shell", path: "scripts/10-control-plane.sh",
+          env: { "NODE_IP" => n[:ip] }
+      else
+        node.vm.provision "worker", type: "shell", path: "scripts/20-worker.sh"
+      end
+    end
+  end
+end
